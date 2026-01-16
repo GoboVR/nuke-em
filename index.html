@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Tracker</title>
+    <style>
+        /* CSS: Minimalist and Clean Design */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f7f6;
+            color: #333;
+            text-align: center;
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+
+        h1 { 
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 30px;
+            font-size: 1.8rem;
+        }
+
+        /* Setup Screen */
+        .setup-group { margin-bottom: 25px; }
+        label { display: block; margin-bottom: 8px; font-weight: 500; color: #7f8c8d; }
+        
+        input {
+            padding: 12px;
+            border-radius: 6px;
+            border: 1px solid #dcdde1;
+            font-size: 1rem;
+            margin: 5px;
+            text-align: center;
+            width: 200px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        input:focus { border-color: #3498db; }
+
+        /* Game Board */
+        .hidden { display: none; }
+        
+        #timer-display {
+            font-size: 4.5rem;
+            font-weight: 300;
+            color: #2c3e50;
+            margin-bottom: 40px;
+            letter-spacing: -2px;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+
+        .team-panel {
+            flex: 1;
+            padding: 20px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            border: 1px solid #eee;
+        }
+
+        .team-name {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+
+        .score-display {
+            font-size: 5rem;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        /* Buttons */
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .btn-start {
+            background-color: #34495e;
+            color: white;
+            padding: 14px 40px;
+            margin-top: 10px;
+        }
+
+        .score-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-score {
+            width: 45px;
+            height: 45px;
+            font-size: 1.2rem;
+            background: #ffffff;
+            border: 1px solid #dcdde1;
+            color: #2c3e50;
+        }
+        .btn-score:hover { background: #f1f2f6; }
+
+        .controls { 
+            margin-top: 50px; 
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+
+        .btn-control {
+            padding: 10px 24px;
+            margin: 0 5px;
+            background: transparent;
+            color: #95a5a6;
+            border: 1px solid #dcdde1;
+        }
+        .btn-control:hover { color: #2c3e50; border-color: #2c3e50; }
+
+        #btn-timer-toggle {
+            background: #3498db;
+            color: white;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div id="setup-screen">
+            <h1>Nuke 'Em Tracker</h1>
+            
+            <div class="setup-group">
+                <label>Team Names</label>
+                <input type="text" id="input-team1" placeholder="Home" value="Team A">
+                <input type="text" id="input-team2" placeholder="Away" value="Team B">
+            </div>
+
+            <div class="setup-group">
+                <label>Match Duration (Minutes)</label>
+                <input type="number" id="input-time" value="15" min="1">
+            </div>
+
+            <button class="btn-start" onclick="startGame()">Begin Match</button>
+        </div>
+
+        <div id="game-screen" class="hidden">
+            <div id="timer-display">15:00</div>
+
+            <div class="scoreboard">
+                <div class="team-panel">
+                    <div class="team-name" id="name-team1">Team A</div>
+                    <div class="score-display" id="score-team1">0</div>
+                    <div class="score-controls">
+                        <button class="btn-score" onclick="changeScore(1, -1)">−</button>
+                        <button class="btn-score" onclick="changeScore(1, 1)">+</button>
+                    </div>
+                </div>
+
+                <div class="team-panel">
+                    <div class="team-name" id="name-team2">Team B</div>
+                    <div class="score-display" id="score-team2">0</div>
+                    <div class="score-controls">
+                        <button class="btn-score" onclick="changeScore(2, -1)">−</button>
+                        <button class="btn-score" onclick="changeScore(2, 1)">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <button class="btn-control" id="btn-timer-toggle" onclick="toggleTimer()">Start Timer</button>
+                <button class="btn-control" onclick="resetGame()">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let score1 = 0, score2 = 0, timeRemaining = 0, timerInterval = null, isRunning = false;
+
+        function startGame() {
+            document.getElementById('name-team1').innerText = document.getElementById('input-team1').value || "Team A";
+            document.getElementById('name-team2').innerText = document.getElementById('input-team2').value || "Team B";
+            
+            score1 = 0; score2 = 0;
+            updateScoreDisplay();
+            
+            timeRemaining = (parseInt(document.getElementById('input-time').value) || 15) * 60;
+            updateTimerDisplay();
+
+            document.getElementById('setup-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+        }
+
+        function changeScore(team, amount) {
+            if (team === 1) score1 = Math.max(0, score1 + amount);
+            else score2 = Math.max(0, score2 + amount);
+            updateScoreDisplay();
+        }
+
+        function updateScoreDisplay() {
+            document.getElementById('score-team1').innerText = score1;
+            document.getElementById('score-team2').innerText = score2;
+        }
+
+        function updateTimerDisplay() {
+            const m = Math.floor(timeRemaining / 60);
+            const s = timeRemaining % 60;
+            document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' + s : s}`;
+        }
+
+        function toggleTimer() {
+            const btn = document.getElementById('btn-timer-toggle');
+            if (isRunning) {
+                clearInterval(timerInterval);
+                isRunning = false;
+                btn.innerText = "Resume Timer";
+            } else {
+                isRunning = true;
+                btn.innerText = "Pause Timer";
+                timerInterval = setInterval(() => {
+                    if (timeRemaining > 0) {
+                        timeRemaining--;
+                        updateTimerDisplay();
+                    } else {
+                        clearInterval(timerInterval);
+                        alert("Match Finished");
+                    }
+                }, 1000);
+            }
+        }
+
+        function resetGame() {
+            clearInterval(timerInterval);
+            isRunning = false;
+            document.getElementById('btn-timer-toggle').innerText = "Start Timer";
+            document.getElementById('game-screen').classList.add('hidden');
+            document.getElementById('setup-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
